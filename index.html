@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Picture Graph to Bar Graph Converter</title>
+
+  <!-- Optional site icons: replace with your own favicon links if needed -->
+  <link rel="icon" href="https://limkimsze-maker.github.io/kimsze_sharp.ico" type="image/x-icon">
+
+  <style>
+    :root{
+      --bg:#f7fbff;
+      --panel:#ffffff;
+      --ink:#1c2b39;
+      --muted:#5d6c7a;
+      --blue:#2777ff;
+      --cyan:#dff6ff;
+      --mint:#dffbea;
+      --yellow:#fff4bf;
+      --orange:#ffb347;
+      --green:#2fb875;
+      --purple:#8967ff;
+      --red:#ff5a5f;
+      --line:#c7d2e3;
+      --shadow: 0 12px 28px rgba(20, 40, 70, .12);
+      --radius: 22px;
+    }
+
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      font-family:"Comic Sans MS","Comic Neue",Arial,sans-serif;
+      background:
+        radial-gradient(circle at 12% 10%, #fff2a9 0 8%, transparent 9%),
+        radial-gradient(circle at 88% 12%, #bff4ff 0 8%, transparent 9%),
+        linear-gradient(135deg,#f9fcff 0%,#eef8ff 48%,#fff8e7 100%);
+      color:var(--ink);
+      min-height:100vh;
+      overflow:hidden;
+    }
+
+    .app{
+      width:100vw;
+      height:100vh;
+      display:grid;
+      grid-template-rows:auto 1fr auto;
+      gap:10px;
+      padding:12px;
+    }
+
+    header{
+      background:var(--panel);
+      border:3px solid #1f2c3d;
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:6px 12px;
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:10px;
+      align-items:center;
+    }
+
+    h1{
+      margin:0;
+      font-size:clamp(16px,1.35vw,22px);
+      line-height:1;
+      white-space:normal;
+    }
+
+    .subtitle{
+      margin-top:2px;
+      font-size:clamp(11px,1vw,14px);
+      color:var(--muted);
+    }
+
+    .modePill{
+      background:var(--mint);
+      border:2px solid #1f2c3d;
+      border-radius:999px;
+      padding:7px 12px;
+      font-size:clamp(13px,1.2vw,18px);
+      font-weight:800;
+      white-space:nowrap;
+    }
+
+    main{
+      min-height:0;
+      display:grid;
+      grid-template-columns:360px 1fr;
+      gap:12px;
+    }
+
+    .card{
+      background:rgba(255,255,255,.94);
+      border:3px solid #1f2c3d;
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      min-height:0;
+    }
+
+    .controls{
+      padding:12px;
+      overflow:auto;
+    }
+
+    .controls h2,.teacher h2{
+      margin:0 0 8px;
+      font-size:24px;
+    }
+
+    label{
+      display:block;
+      font-weight:800;
+      margin:10px 0 4px;
+      font-size:15px;
+    }
+
+    input, select{
+      width:100%;
+      font-family:inherit;
+      font-size:16px;
+      padding:8px 10px;
+      border:2px solid #1f2c3d;
+      border-radius:12px;
+      background:#fff;
+    }
+
+    .row2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+    }
+
+    .catRow{
+      display:grid;
+      grid-template-columns:1fr 82px 34px;
+      gap:6px;
+      margin:6px 0;
+      align-items:center;
+    }
+
+    .catRow input[type="number"]{ text-align:center; }
+
+    .tinyBtn{
+      height:38px;
+      border:2px solid #1f2c3d;
+      border-radius:10px;
+      background:#ffe6ef;
+      font-weight:900;
+      cursor:pointer;
+    }
+
+    .buttonGrid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:8px;
+      margin-top:12px;
+    }
+
+    button.mainBtn{
+      border:3px solid #1f2c3d;
+      border-radius:16px;
+      padding:10px 12px;
+      font-family:inherit;
+      font-size:16px;
+      font-weight:900;
+      cursor:pointer;
+      box-shadow:0 5px 0 rgba(31,44,61,.25);
+      transition:.12s transform, .12s box-shadow;
+    }
+
+    button.mainBtn:active{
+      transform:translateY(3px);
+      box-shadow:0 2px 0 rgba(31,44,61,.25);
+    }
+
+    .pictureBtn{ background:var(--yellow); }
+    .verticalBtn{ background:#dcecff; }
+    .horizontalBtn{ background:#eadfff; }
+    .addBtn{ background:#dffbea; }
+    .resetBtn{ background:#ffe3e3; }
+
+    .graphArea{
+      display:grid;
+      grid-template-rows:auto 1fr;
+      gap:8px;
+      padding:8px;
+      overflow:hidden;
+    }
+
+    .stepStrip{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:8px;
+    }
+
+    .step{
+      border:2px solid #1f2c3d;
+      border-radius:16px;
+      padding:8px;
+      background:#fff;
+      text-align:center;
+      font-weight:900;
+      font-size:15px;
+      opacity:.55;
+    }
+
+    .step.active{
+      opacity:1;
+      background:var(--mint);
+      outline:4px solid rgba(47,184,117,.25);
+    }
+
+    .canvasWrap{
+      background:#fff;
+      border:3px dashed #9cb3ca;
+      border-radius:20px;
+      min-height:0;
+      position:relative;
+      overflow:hidden;
+    }
+
+    svg{
+      width:100%;
+      height:100%;
+      display:block;
+    }
+
+    .feedback{ display:none !important; }
+
+    .teacher{
+      padding:12px;
+      overflow:auto;
+    }
+
+    .note{
+      border:2px solid #1f2c3d;
+      border-radius:18px;
+      padding:10px;
+      margin:10px 0;
+      background:#f5fbff;
+      font-size:15px;
+      line-height:1.25;
+    }
+
+    .note strong{
+      display:block;
+      font-size:17px;
+      margin-bottom:4px;
+    }
+
+    .questionBox{
+      background:#f3eaff;
+    }
+
+    .legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      font-size:13px;
+      margin-top:8px;
+    }
+
+    .legend span{
+      border:1.5px solid #1f2c3d;
+      border-radius:999px;
+      padding:4px 8px;
+      background:#fff;
+    }
+
+    footer{
+      text-align:center;
+      font-size:13px;
+      color:#435469;
+      font-weight:800;
+    }
+
+    .axisText{ font-size:14px; font-weight:800; fill:#1c2b39; }
+    .titleText{ font-size:24px; font-weight:900; fill:#1c2b39; }
+    .smallText{ font-size:13px; font-weight:800; fill:#435469; }
+    .gridLine{ stroke:#d3deeb; stroke-width:1.5; }
+    .axisLine{ stroke:#1f2c3d; stroke-width:3; }
+    .bar{ fill:#7fd1ff; stroke:#1f2c3d; stroke-width:3; }
+    .bar2{ fill:#bda8ff; stroke:#1f2c3d; stroke-width:3; }
+    .sticky{ fill:#fff8a8; stroke:#1f2c3d; stroke-width:2; }
+    .stickyHalf{ fill:#ffd3d3; stroke:#1f2c3d; stroke-width:2; }
+    .ghost{ opacity:.2; }
+
+    @media (max-width:1100px){
+      body{ overflow:auto; }
+      .app{ height:auto; min-height:100vh; }
+      main{ grid-template-columns:1fr; }
+      .canvasWrap{ height:560px; }
+    }
+  
+    #feedback{display:none !important;}
+  
+    select:disabled{
+      background:#eef2f6;
+      color:#7b8794;
+      cursor:not-allowed;
+      opacity:.75;
+    }
+
+  </style>
+</head>
+
+<body>
+  <!-- Always-Clear on Load style: this page does not store pupil data. -->
+  <div class="app">
+    <header>
+      <div>
+        <h1>Picture Graph ➜ Vertical Bar Graph ➜ Horizontal Bar Graph</h1>
+        <div class="subtitle">Let pupils choose a survey, create a picture graph, then convert it into bar graphs with different scales.</div>
+      </div>
+      <div class="modePill" id="modePill">Mode: Picture Graph</div>
+    </header>
+
+    <main>
+      <section class="card controls" aria-label="Teacher controls">
+        <h2>1. Create the survey</h2>
+
+        <label for="surveyTitle">Survey question / graph title</label>
+        <input id="surveyTitle" value="Favourite Drink Survey" />
+
+        <div class="row2">
+          <div>
+            <label for="unitValue">Each picture represents</label>
+            <select id="unitValue">
+              <option value="1">1 pupil</option>
+              <option value="2">2 pupils</option>
+              <option value="5">5 pupils</option>
+            </select>
+          </div>
+          <div>
+            <label for="scaleStep">Axis scale interval</label>
+            <select id="scaleStep">
+              <option value="1">Count by 1s</option>
+              <option value="2">Count by 2s</option>
+              <option value="5">Count by 5s</option>
+            </select>
+          </div>
+        </div>
+
+        <label>Categories and data</label>
+        <div id="categoryList"></div>
+
+        <button class="mainBtn addBtn" id="addCategoryBtn">+ Add Category</button>
+
+        <div class="buttonGrid">
+          <button class="mainBtn pictureBtn" id="pictureBtn">Make / Refresh Picture Graph</button>
+          <button class="mainBtn verticalBtn" id="verticalBtn">Convert to Vertical Bar Graph</button>
+          <button class="mainBtn horizontalBtn" id="horizontalBtn">Convert to Horizontal Bar Graph</button>
+          <button class="mainBtn verticalBtn" id="toggleBarLinesBtn">Hide Faint Lines in Bars</button>
+          <button class="mainBtn resetBtn" id="resetBtn">Reset to Sample Data</button>
+        </div>
+
+        <div class="legend">
+          <span>⬛ Full picture = selected value</span>
+          <span>◧ Half picture appears when needed</span>
+          <span>Scale can be changed anytime</span>
+        </div>
+      </section>
+
+      <section class="card graphArea" aria-label="Graph display">
+        <div class="stepStrip">
+          <div class="step active" id="stepPicture">1 Picture Graph</div>
+          <div class="step" id="stepVertical">2 Vertical Bar Graph</div>
+          <div class="step" id="stepHorizontal">3 Horizontal Bar Graph</div>
+        </div>
+
+        <div class="canvasWrap">
+          <svg id="graphSvg" viewBox="0 0 900 560" role="img" aria-label="Interactive graph"></svg>
+        </div>
+
+        <div class="feedback" id="feedback">
+          Start with the pupils’ own survey. Enter the categories and data, then press <b>&nbsp;Make / Refresh Picture Graph&nbsp;</b>.
+        </div>
+      </section>
+    </main>
+
+    <footer>Designed by Lim Kim Sze © 2026</footer>
+  </div>
+
+  <script>
+    const svg = document.getElementById('graphSvg');
+    const categoryList = document.getElementById('categoryList');
+    const surveyTitle = document.getElementById('surveyTitle');
+    const unitValue = document.getElementById('unitValue');
+    const scaleStep = document.getElementById('scaleStep');
+    const feedback = document.getElementById('feedback') || { innerHTML: '' };
+    const modePill = document.getElementById('modePill');
+
+    const sampleData = [
+      {label:'Drink A', value:4},
+      {label:'Drink B', value:7},
+      {label:'Drink C', value:6}
+    ];
+
+    let data = JSON.parse(JSON.stringify(sampleData));
+    let mode = 'picture';
+    let showBarGuideLines = true;
+
+    function el(name, attrs={}, children=[]){
+      const node = document.createElementNS('http://www.w3.org/2000/svg', name);
+      for(const [k,v] of Object.entries(attrs)) node.setAttribute(k,v);
+      children.forEach(c => node.appendChild(c));
+      return node;
+    }
+
+    function text(x,y,content,cls='axisText', anchor='middle'){
+      const t = el('text',{x,y,class:cls,'text-anchor':anchor});
+      t.textContent = content;
+      return t;
+    }
+
+    function clearSvg(){
+      while(svg.firstChild) svg.removeChild(svg.firstChild);
+    }
+
+    function clamp(n,min,max){ return Math.max(min, Math.min(max,n)); }
+
+    function getDataFromInputs(){
+      const rows = [...categoryList.querySelectorAll('.catRow')];
+      data = rows.map(r => ({
+        label: r.querySelector('.catName').value.trim() || 'Item',
+        value: clamp(Number(r.querySelector('.catValue').value || 0), 0, 99)
+      })).filter(d => d.label && d.value >= 0);
+      if(data.length === 0) data = [{label:'Item A',value:1}];
+    }
+
+    function isValidPictureUnit(unit){
+      // Enable only sensible picture scales for the current data.
+      // Allowed:
+      // 1) full pictures only, or
+      // 2) full pictures plus at most one half-picture.
+      // Example: if 1 picture = 2 pupils, an odd number can be shown with
+      // a triangle half-picture. No quarters or smaller fractions are allowed.
+      if(!Number.isInteger(unit) || unit < 1) return false;
+
+      return data.every(d => {
+        const value = Number(d.value || 0);
+        const remainder = value % unit;
+
+        if(remainder === 0) return true;                 // full picture
+        if(unit % 2 === 0 && remainder * 2 === unit) return true; // half picture
+
+        return false;
+      });
+    }
+
+    function getValidPictureUnits(){
+      const maxVal = Math.max(...data.map(d => Number(d.value || 0)), 1);
+      const valid = [];
+
+      for(let unit = 1; unit <= maxVal; unit++){
+        if(isValidPictureUnit(unit)) valid.push(unit);
+      }
+
+      return valid.length ? valid : [1];
+    }
+
+    function updatePictureUnitOptions(){
+      const previous = Number(unitValue.value || 1);
+      const valid = getValidPictureUnits();
+
+      // Keep the user's current choice if it is still valid.
+      // Otherwise, prefer 2 when possible because it allows half-pictures
+      // for odd numbers. Example: 12, 13, 14 -> scale 2 is valid.
+      const chosen = valid.includes(previous)
+        ? previous
+        : (valid.includes(2) ? 2 : valid[0]);
+
+      unitValue.innerHTML = valid
+        .map(unit => `<option value="${unit}">${unit} pupil${unit > 1 ? 's' : ''}</option>`)
+        .join('');
+
+      unitValue.value = String(chosen);
+    }
+
+    function isValidAxisStep(step){
+      // Use the same full-or-half logic for bar graph scales.
+      // A data value must land exactly on a scale mark or halfway between
+      // two scale marks. No quarters or smaller intervals are allowed.
+      if(!Number.isInteger(step) || step < 1) return false;
+
+      return data.every(d => {
+        const value = Number(d.value || 0);
+        const remainder = value % step;
+
+        if(remainder === 0) return true;                  // on a scale mark
+        if(step % 2 === 0 && remainder * 2 === step) return true; // half scale
+
+        return false;
+      });
+    }
+
+    function getValidAxisSteps(){
+      const maxVal = Math.max(...data.map(d => Number(d.value || 0)), 1);
+      const valid = [];
+
+      for(let step = 1; step <= maxVal; step++){
+        if(isValidAxisStep(step)) valid.push(step);
+      }
+
+      return valid.length ? valid : [1];
+    }
+
+    function updateAxisStepOptions(){
+      const previous = Number(scaleStep.value || 1);
+      const valid = getValidAxisSteps();
+
+      // Keep the current choice if valid. Otherwise prefer 2 when possible
+      // because it shows how odd values can be read at half of the scale.
+      const chosen = valid.includes(previous)
+        ? previous
+        : (valid.includes(2) ? 2 : valid[0]);
+
+      scaleStep.innerHTML = valid
+        .map(step => `<option value="${step}">Count by ${step}s</option>`)
+        .join('');
+
+      scaleStep.value = String(chosen);
+    }
+
+    function renderInputs(){
+      categoryList.innerHTML = '';
+      data.forEach((d,idx) => {
+        const row = document.createElement('div');
+        row.className = 'catRow';
+        row.innerHTML = `
+          <input class="catName" value="${escapeHtml(d.label)}" aria-label="Category name">
+          <input class="catValue" type="number" min="0" max="99" value="${d.value}" aria-label="Category value">
+          <button class="tinyBtn" title="Remove category">×</button>
+        `;
+        row.querySelector('.tinyBtn').addEventListener('click', () => {
+          if(data.length > 1){
+            getDataFromInputs();
+            data.splice(idx,1);
+            renderInputs();
+            draw();
+          }
+        });
+        row.querySelectorAll('input').forEach(input => input.addEventListener('input', draw));
+        categoryList.appendChild(row);
+      });
+    }
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+    }
+
+    function roundUpToStep(value, step){
+      return Math.max(step, Math.ceil(value / step) * step);
+    }
+
+    function getMax(){
+      getDataFromInputs();
+      const maxVal = Math.max(...data.map(d => d.value), 1);
+      const step = Number(scaleStep.value);
+      return roundUpToStep(maxVal + step, step);
+    }
+
+    function draw(){
+      getDataFromInputs();
+      updatePictureUnitOptions();
+      updateAxisStepOptions();
+      updateSteps();
+      updateBarLineButton();
+      if(mode === 'picture') drawPictureGraph();
+      if(mode === 'vertical') drawVerticalBarGraph();
+      if(mode === 'horizontal') drawHorizontalBarGraph();
+    }
+
+    function updateSteps(){
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+      if(mode === 'picture') document.getElementById('stepPicture').classList.add('active');
+      if(mode === 'vertical') document.getElementById('stepVertical').classList.add('active');
+      if(mode === 'horizontal') document.getElementById('stepHorizontal').classList.add('active');
+
+      // Axis scale interval is only used for bar graphs.
+      // Disable it when pupils are still in Picture Graph mode.
+      scaleStep.disabled = (mode === 'picture');
+
+      modePill.textContent = mode === 'picture' ? 'Mode: Picture Graph' :
+                             mode === 'vertical' ? 'Mode: Vertical Bar Graph' :
+                             'Mode: Horizontal Bar Graph';
+    }
+
+    function updateBarLineButton(){
+      const btn = document.getElementById('toggleBarLinesBtn');
+      if(!btn) return;
+      btn.textContent = showBarGuideLines ? 'Hide Faint Lines in Bars' : 'Show Faint Lines in Bars';
+    }
+
+    function drawTitle(){
+      svg.appendChild(text(450,35,surveyTitle.value || 'Survey Graph','titleText'));
+    }
+
+    function drawPictureGraph(){
+      clearSvg();
+      drawTitle();
+
+      const unit = Number(unitValue.value);
+      const left = 95, top = 75, width = 730, height = 395, baseY = top + height;
+      const n = data.length;
+      const colW = width / n;
+      const maxIcons = Math.max(...data.map(d => Math.ceil(d.value / unit)), 1);
+
+      // Keep picture squares comfortably centred inside each column.
+      // This prevents taller stacks from sitting too close to the top border.
+      const gap = 6;
+      const safeTop = top + 44;
+      const safeBottom = baseY - 44;
+      const safeHeight = safeBottom - safeTop;
+      const sq = clamp((safeHeight - (maxIcons - 1) * gap) / maxIcons, 18, 42);
+
+      svg.appendChild(el('rect',{x:left,y:top,width,height,rx:8,fill:'#ffffff',stroke:'#1f2c3d','stroke-width':3}));
+
+      for(let i=0;i<=n;i++){
+        const x = left + i*colW;
+        svg.appendChild(el('line',{x1:x,y1:top,x2:x,y2:baseY,stroke:'#9fb4ce','stroke-width':2}));
+      }
+
+      data.forEach((d,i) => {
+        const cx = left + i*colW + colW/2;
+        const full = Math.floor(d.value / unit);
+        const remainder = d.value % unit;
+
+        // Half-value rule:
+        // Example: if 1 picture represents 2 pupils, then 1 pupil is shown
+        // as ONLY half a square, drawn as a triangle.
+        // The dropdown prevents smaller fractions such as quarters.
+        const showHalf = unit % 2 === 0 && remainder * 2 === unit;
+        const total = full + (showHalf ? 1 : 0);
+
+        // All picture stacks start from the same base line, like post-it notes
+        // being joined from the bottom of the graph.
+        for(let j=0;j<total;j++){
+          const x = cx - sq/2;
+          const y = safeBottom - (j + 1) * sq - j * gap;
+          const isHalf = showHalf && j === total - 1;
+          if(isHalf){
+            // Draw only half the square as a clean triangle.
+            svg.appendChild(el('path',{
+              d:`M ${x} ${y+sq} L ${x+sq} ${y+sq} L ${x+sq} ${y} Z`,
+              fill:'#fff8a8',
+              stroke:'#1f2c3d',
+              'stroke-width':2,
+              'stroke-linejoin':'round'
+            }));
+          }else{
+            svg.appendChild(el('rect',{x,y,width:sq,height:sq,rx:4,class:'sticky'}));
+          }
+        }
+
+        svg.appendChild(text(cx,baseY+23,d.label,'axisText'));
+        svg.appendChild(text(cx,baseY+45,`${d.value}`,'smallText'));
+      });
+
+      svg.appendChild(text(450,545,`Picture graph scale: each picture represents ${unit} pupil${unit>1?'s':''}.`,'axisText'));
+
+      feedback.innerHTML = `This is the pupils’ <b>picture graph</b>. Each square picture represents <b>${unit}</b> pupil${unit>1?'s':''}. If the value is not exactly on the picture scale, a half-picture is shown so pupils can discuss scale carefully.`;
+    }
+
+    function drawVerticalBarGraph(){
+      clearSvg();
+      drawTitle();
+
+      const step = Number(scaleStep.value);
+      const maxVal = getMax();
+      const left = 100, top = 75, width = 720, height = 390, baseY = top + height;
+      const n = data.length;
+      const colW = width / n;
+
+      svg.appendChild(el('rect',{x:left,y:top,width,height,rx:8,fill:'#ffffff',stroke:'#1f2c3d','stroke-width':3}));
+
+      for(let val=0; val<=maxVal; val+=step){
+        const y = baseY - (val / maxVal) * height;
+        svg.appendChild(el('line',{x1:left,y1:y,x2:left+width,y2:y,class:'gridLine'}));
+        svg.appendChild(text(left-24,y+5,String(val),'axisText','end'));
+      }
+
+      svg.appendChild(el('line',{x1:left,y1:baseY,x2:left+width,y2:baseY,class:'axisLine'}));
+      svg.appendChild(el('line',{x1:left,y1:top,x2:left,y2:baseY,class:'axisLine'}));
+
+      data.forEach((d,i) => {
+        const cx = left + i*colW + colW/2;
+        const barW = Math.min(90, colW*.48);
+        const barH = (d.value / maxVal) * height;
+        const x = cx - barW/2;
+        const y = baseY - barH;
+
+        svg.appendChild(el('rect',{x,y,width:barW,height:barH,rx:7,class:'bar'}));
+        svg.appendChild(text(cx,y-9,String(d.value),'axisText'));
+        svg.appendChild(text(cx,baseY+25,d.label,'axisText'));
+
+        // Optional faint guide lines to show how stacked picture squares become bars.
+        if(showBarGuideLines){
+          const unit = Number(unitValue.value);
+          const full = Math.ceil(d.value / unit);
+          const miniH = Math.max(7, barH / Math.max(full,1));
+          for(let j=0;j<full;j++){
+            const gy = baseY - (j+1)*miniH;
+            svg.appendChild(el('rect',{x:x+barW*.18,y:gy,width:barW*.64,height:Math.max(5,miniH-1),class:'sticky ghost'}));
+          }
+        }
+      });
+
+      svg.appendChild(text(450,515,`Vertical scale: count by ${step}s. The bar height shows the number of pupils.`,'axisText'));
+      svg.appendChild(text(35,268,'Number of pupils','smallText','middle')).setAttribute('transform','rotate(-90 35 268)');
+
+      feedback.innerHTML = `Now the joined post-it pictures become <b>vertical bars</b>. The data is the same, but the values are read from the <b>vertical scale</b>. Current scale: <b>count by ${step}s</b>.`;
+    }
+
+    function drawHorizontalBarGraph(){
+      clearSvg();
+      drawTitle();
+
+      const step = Number(scaleStep.value);
+      const maxVal = getMax();
+      const left = 170, top = 82, width = 650, height = 360;
+      const n = data.length;
+      const rowH = height / n;
+
+      svg.appendChild(el('rect',{x:left,y:top,width,height,rx:8,fill:'#ffffff',stroke:'#1f2c3d','stroke-width':3}));
+
+      for(let val=0; val<=maxVal; val+=step){
+        const x = left + (val / maxVal) * width;
+        svg.appendChild(el('line',{x1:x,y1:top,x2:x,y2:top+height,class:'gridLine'}));
+        svg.appendChild(text(x,top+height+25,String(val),'axisText'));
+      }
+
+      svg.appendChild(el('line',{x1:left,y1:top+height,x2:left+width,y2:top+height,class:'axisLine'}));
+      svg.appendChild(el('line',{x1:left,y1:top,x2:left,y2:top+height,class:'axisLine'}));
+
+      data.forEach((d,i) => {
+        const cy = top + i*rowH + rowH/2;
+        const barH = Math.min(55, rowH*.5);
+        const barW = (d.value / maxVal) * width;
+        const y = cy - barH/2;
+
+        svg.appendChild(text(left-20,cy+6,d.label,'axisText','end'));
+        svg.appendChild(el('rect',{x:left,y,width:barW,height:barH,rx:7,class:'bar2'}));
+        svg.appendChild(text(left+barW+25,cy+6,String(d.value),'axisText','start'));
+      });
+
+      svg.appendChild(text(495,515,`Horizontal scale: count by ${step}s. The bar length shows the number of pupils.`,'axisText'));
+      svg.appendChild(text(495,top+height+55,'Number of pupils','smallText'));
+
+      feedback.innerHTML = `The vertical bar graph has become a <b>horizontal bar graph</b>. The categories are now on the <b>vertical axis</b>, and the values are read from the <b>horizontal scale</b>.`;
+    }
+
+    function setMode(nextMode){
+      mode = nextMode;
+      draw();
+    }
+
+    document.getElementById('pictureBtn').addEventListener('click', () => setMode('picture'));
+    document.getElementById('verticalBtn').addEventListener('click', () => setMode('vertical'));
+    document.getElementById('horizontalBtn').addEventListener('click', () => setMode('horizontal'));
+
+    document.getElementById('toggleBarLinesBtn').addEventListener('click', () => {
+      showBarGuideLines = !showBarGuideLines;
+      draw();
+    });
+
+    document.getElementById('addCategoryBtn').addEventListener('click', () => {
+      getDataFromInputs();
+      data.push({label:`Item ${data.length+1}`, value:3});
+      renderInputs();
+      draw();
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      surveyTitle.value = 'Favourite Drink Survey';
+      unitValue.value = '1';
+      scaleStep.value = '1';
+      data = JSON.parse(JSON.stringify(sampleData));
+      mode = 'picture';
+      showBarGuideLines = true;
+      renderInputs();
+      draw();
+    });
+
+    [surveyTitle,unitValue,scaleStep].forEach(input => input.addEventListener('input', draw));
+    [unitValue,scaleStep].forEach(input => input.addEventListener('change', draw));
+
+    renderInputs();
+    draw();
+  </script>
+</body>
+</html>
